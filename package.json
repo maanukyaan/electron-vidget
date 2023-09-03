@@ -11,5 +11,16 @@
   "license": "ISC",
   "devDependencies": {
     "electron": "^26.1.0"
+  },
+  "build": {
+    "appId": "com.kenshi.timeWidget",
+    "productName": "Time Widget",
+    "directories": {
+      "output": "build"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "logo.ico"
+    }
   }
 }

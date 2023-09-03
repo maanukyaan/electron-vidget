@@ -1,6 +1,6 @@
-const { app, BrowserWindow, Tray, nativeImage } = require("electron");
+const { app, BrowserWindow, Tray, Menu, dialog } = require("electron");
 
-let win;
+let win, tray;
 
 const createWindow = () => {
   win = new BrowserWindow({
@@ -10,59 +10,77 @@ const createWindow = () => {
     frame: false,
     resizable: false,
     show: false,
+    skipTaskbar: true,
   });
 
   win.loadURL(`file://${__dirname}/app/index.html`);
   win.show();
 
-  // Emitted when the window is closed.
-  win.on("closed", function () {
-    // Dereference the window object, usually you would store windows
-    // in an array if your app supports multi windows, this is the time
-    // when you should delete the corresponding element.
-    win = null;
+  // Обработчик события закрытия окна
+  win.on("close", (event) => {
+    // Отменяем закрытие окна
+    event.preventDefault();
+
+    // Скрываем окно
+    win.hide();
+  });
+
+  const opacitySubMenu = Array.from({ length: 10 }, (_, index) => {
+    const opacityValue = (index + 1) * 10; // Вычисляем значение opacity в процентах (10%, 20%, 30%, ...)
+    return {
+      label: `${opacityValue}%`, // Опция для указанной opacity в процентах
+      click: () => {
+        setOpacity(opacityValue / 100); // Пересчитываем в десятичное значение (0.1, 0.2, 0.3, ...)
+      },
+    };
+  });
+
+  // Создание иконки в системном трее
+  tray = new Tray(`${__dirname}/logo.ico`);
+
+  // Создание контекстного меню для трея
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: "Opacity", // Название меню
+      submenu: opacitySubMenu,
+    },
+    {
+    label: "Info",
+    click: () => {
+      dialog.showMessageBox({
+        type: "info",
+        title: "Information",
+        message: "Made by @kancni",
+      });
+    },
+  },
+    {
+      label: "Exit", // Опция для выхода из приложения
+      click: () => {
+        app.exit();
+      },
+    },
+  ]);
+
+  // Установка контекстного меню для трея
+  tray.setContextMenu(contextMenu);
+
+  // Обработчик события двойного клика по иконке в трее
+  tray.on("double-click", () => {
+    // Показываем окно, если оно скрыто
+    win.show();
   });
 };
-
-// // Обработчик события закрытия окна
-// win.on("close", (event) => {
-//   // Отменяем закрытие окна
-//   event.preventDefault();
-
-//   // Скрываем окно
-//   win.hide();
-// });
-
-// // Путь к иконке для трея
-// const trayIcon = nativeImage.createFromPath(path.join(__dirname, "logo.ico"));
-
-// let tray;
-
-// // Создайте трей и установите в него иконку
-// function createTray() {
-//   tray = new Tray(trayIcon);
-//   // Создание контекстного меню для трея
-//   const contextMenu = Menu.buildFromTemplate([
-//     {
-//       label: "Exit",
-//       click: () => {
-//         app.exit();
-//       },
-//     },
-//   ]);
-
-//   // Установка контекстного меню для трея
-//   tray.setContextMenu(contextMenu);
-
-//   // Обработчик события двойного клика по иконке в трее
-//   tray.on("double-click", () => {
-//     // Показываем окно, если оно скрыто
-//     if (!win.isVisible()) {
-//       win.show();
-//     }
-//   });
-// }
 
 app.whenReady().then(() => {
   createWindow();
 });
+
+// Функция для установки opacity элементов
+function setOpacity(opacity) {
+  win.webContents.insertCSS(`
+      h1, h2, h3, h4, h5, h6 {
+        opacity: ${opacity} !important;
+      }
+    `);
+}
