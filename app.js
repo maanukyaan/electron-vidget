@@ -1,6 +1,7 @@
-const { app, BrowserWindow, Tray, Menu, dialog } = require("electron");
+const { app, BrowserWindow, Tray, Menu, dialog, ipcMain } = require("electron");
+const path = require("path");
 
-let win, tray;
+let win, tray, colorWindow;
 
 const createWindow = () => {
   win = new BrowserWindow({
@@ -11,6 +12,9 @@ const createWindow = () => {
     resizable: false,
     show: false,
     skipTaskbar: true,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+    },
   });
 
   win.loadURL(`file://${__dirname}/app/index.html`);
@@ -25,10 +29,17 @@ const createWindow = () => {
     win.hide();
   });
 
+  ipcMain.on("sendColor", (event, color) => {
+    setColor(color);
+    console.log("Color delivered");
+    colorWindow.close();
+  });
+
   const opacitySubMenu = Array.from({ length: 10 }, (_, index) => {
     const opacityValue = (index + 1) * 10; // Вычисляем значение opacity в процентах (10%, 20%, 30%, ...)
     return {
       label: `${opacityValue}%`, // Опция для указанной opacity в процентах
+      type: "radio",
       click: () => {
         setOpacity(opacityValue / 100); // Пересчитываем в десятичное значение (0.1, 0.2, 0.3, ...)
       },
@@ -45,15 +56,21 @@ const createWindow = () => {
       submenu: opacitySubMenu,
     },
     {
-    label: "Info",
-    click: () => {
-      dialog.showMessageBox({
-        type: "info",
-        title: "Information",
-        message: "Made by @kancni",
-      });
+      label: "Color",
+      click: () => {
+        createColorWindow(); // При клике на "Color" создаем окно выбора цветов
+      },
     },
-  },
+    {
+      label: "Info",
+      click: () => {
+        dialog.showMessageBox({
+          type: "info",
+          title: "Information",
+          message: "Made by @kancni",
+        });
+      },
+    },
     {
       label: "Exit", // Опция для выхода из приложения
       click: () => {
@@ -72,6 +89,22 @@ const createWindow = () => {
   });
 };
 
+// Функция для создания окна выбора цветов
+function createColorWindow() {
+  colorWindow = new BrowserWindow({
+    width: 800,
+    height: 500,
+    frame: false,
+  });
+
+  colorWindow.loadURL(`file://${__dirname}/app/color.html`); // Создайте файл color.html для выбора цветов
+
+  // Закрываем окно выбора цветов при закрытии
+  colorWindow.on("closed", () => {
+    colorWindow = null;
+  });
+}
+
 app.whenReady().then(() => {
   createWindow();
 });
@@ -79,8 +112,17 @@ app.whenReady().then(() => {
 // Функция для установки opacity элементов
 function setOpacity(opacity) {
   win.webContents.insertCSS(`
-      h1, h2, h3, h4, h5, h6 {
-        opacity: ${opacity} !important;
-      }
-    `);
+        h1, h2, h3, h4, h5, h6 {
+          opacity: ${opacity} !important;
+        }
+      `);
+}
+
+// Функция для установки color элементов
+function setColor(color) {
+  win.webContents.insertCSS(`
+    h1, h2, h3, h4, h5, h6 {
+      color: ${color} !important;
+    }
+  `);
 }

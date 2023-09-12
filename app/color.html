@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Выберите цвет</title>
+    <link rel="stylesheet" href="css/reboot.min.css">
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/monolith.min.css"
+    />
+
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        background-color: #222;
+        color: #f1f1f1;
+        min-height: 100vh;
+        overflow: hidden;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      }
+      
+      button {
+        outline: none;
+        background: none;
+        border: 1px solid #f1f1f1;
+        border-radius: 10px;
+        color: #f1f1f1;
+        padding: 5px 25px;
+        margin: 20px 0 0 0;
+        transition: .3s all ease;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #f1f1f1;
+        color: #222;
+      }
+    </style>
+    <!-- 'nano' theme -->
+  </head>
+
+  <body>
+    <h1>Choose color:</h1>
+    <input type="color" id="colorPicker" />
+    <button id="saveButton">Save</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
+    <script>
+      // Simple example, see optional options for more configuration.
+      const pickr = Pickr.create({
+        el: "#colorPicker",
+        theme: "monolith", // or 'monolith', or 'nano'
+
+        swatches: [
+          "rgba(244, 67, 54, 1)",
+          "rgba(233, 30, 99, 0.95)",
+          "rgba(156, 39, 176, 0.9)",
+          "rgba(103, 58, 183, 0.85)",
+          "rgba(63, 81, 181, 0.8)",
+          "rgba(33, 150, 243, 0.75)",
+          "rgba(3, 169, 244, 0.7)",
+          "rgba(0, 188, 212, 0.7)",
+          "rgba(0, 150, 136, 0.75)",
+          "rgba(76, 175, 80, 0.8)",
+          "rgba(139, 195, 74, 0.85)",
+          "rgba(205, 220, 57, 0.9)",
+          "rgba(255, 235, 59, 0.95)",
+          "rgba(255, 193, 7, 1)",
+        ],
+
+        components: {
+          // Main components
+          preview: true,
+          opacity: true,
+
+          // Input / output Options
+          interaction: {
+            rgba: true,
+            input: true,
+            clear: true,
+            save: true,
+          },
+        },
+      });
+    </script>
+
+    <script>
+      const colorPicker = document.getElementById("colorPicker");
+      const saveButton = document.getElementById("saveButton");
+
+      saveButton.addEventListener("click", () => {
+        let currentColor = pickr.getColor().toHEXA().toString();
+        window.electronAPI.sendColor(currentColor);
+      });
+    </script>
+  </body>
+</html>
