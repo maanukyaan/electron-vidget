@@ -1,19 +1,71 @@
-const { app, BrowserWindow, Tray, Menu, dialog, ipcMain } = require("electron");
+const { app, BrowserWindow, Tray, Menu, dialog } = require("electron");
 const path = require("path");
+const fs = require("fs");
+const AutoLaunch = require("auto-launch");
 
-let win, tray, colorWindow;
+let autostartEnabled = false;
+const autoLauncher = new AutoLaunch({
+  name: "Ultra Clock",
+  path: app.getPath("exe"),
+});
+
+try {
+  const configFilePath = path.join(__dirname, "config.txt");
+  const configContent = fs.readFileSync(configFilePath, "utf8");
+  const configLines = configContent.split("\n");
+  const autostartLine = configLines.find((line) =>
+    line.startsWith("AUTOSTART=")
+  );
+
+  if (autostartLine) {
+    const autostartValue = autostartLine.split("=")[1].trim();
+    autostartEnabled = autostartValue === "true";
+  }
+} catch (error) {
+  console.error("Error reading config.txt:", error);
+}
+
+try {
+  autostartEnabled ? autoLauncher.enable() : autoLauncher.disable();
+} catch (error) {
+  console.error("Error with autostart operation:", error);
+}
+
+function updateAutostart() {
+  try {
+    if (autostartEnabled) {
+      autoLauncher.enable().catch((error) => {
+        console.error("Error enabling autostart:", error);
+      });
+    } else {
+      autoLauncher.disable().catch((error) => {
+        console.error("Error disabling autostart:", error);
+      });
+    }
+
+    const configFilePath = path.join(__dirname, "config.txt");
+    const newConfigContent = `AUTOSTART=${autostartEnabled ? "true" : "false"}`;
+    fs.writeFileSync(configFilePath, newConfigContent);
+  } catch (error) {
+    console.error("Error updating AUTOSTART in config.txt:", error);
+  }
+}
+
+let win, tray;
 
 const createWindow = () => {
   win = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 700,
+    height: 500,
     transparent: true,
     frame: false,
     resizable: false,
     show: false,
     skipTaskbar: true,
     webPreferences: {
+      nodeIntegration: true,
       preload: path.join(__dirname, "preload.js"),
+      devTools: false,
     },
   });
 
@@ -29,12 +81,6 @@ const createWindow = () => {
     win.hide();
   });
 
-  ipcMain.on("sendColor", (event, color) => {
-    setColor(color);
-    console.log("Color delivered");
-    colorWindow.close();
-  });
-
   const opacitySubMenu = Array.from({ length: 10 }, (_, index) => {
     const opacityValue = (index + 1) * 10; // Вычисляем значение opacity в процентах (10%, 20%, 30%, ...)
     return {
@@ -43,23 +89,18 @@ const createWindow = () => {
       click: () => {
         setOpacity(opacityValue / 100); // Пересчитываем в десятичное значение (0.1, 0.2, 0.3, ...)
       },
+      checked: opacityValue === 50,
     };
   });
 
   // Создание иконки в системном трее
-  tray = new Tray(`${__dirname}/logo.ico`);
+  tray = new Tray(`${__dirname}/icon.ico`);
 
   // Создание контекстного меню для трея
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: "Opacity", // Название меню
+      label: "Opacity",
       submenu: opacitySubMenu,
-    },
-    {
-      label: "Color",
-      click: () => {
-        createColorWindow(); // При клике на "Color" создаем окно выбора цветов
-      },
     },
     {
       label: "Info",
@@ -72,7 +113,30 @@ const createWindow = () => {
       },
     },
     {
-      label: "Exit", // Опция для выхода из приложения
+      label: "Autostart",
+      submenu: [
+        {
+          label: "Enable",
+          type: "radio",
+          click: () => {
+            autostartEnabled = true;
+            updateAutostart();
+          },
+          checked: autostartEnabled,
+        },
+        {
+          label: "Disable",
+          type: "radio",
+          click: () => {
+            autostartEnabled = false;
+            updateAutostart();
+          },
+          checked: !autostartEnabled,
+        },
+      ],
+    },
+    {
+      label: "Exit",
       click: () => {
         app.exit();
       },
@@ -89,40 +153,14 @@ const createWindow = () => {
   });
 };
 
-// Функция для создания окна выбора цветов
-function createColorWindow() {
-  colorWindow = new BrowserWindow({
-    width: 800,
-    height: 500,
-    frame: false,
-  });
-
-  colorWindow.loadURL(`file://${__dirname}/app/color.html`); // Создайте файл color.html для выбора цветов
-
-  // Закрываем окно выбора цветов при закрытии
-  colorWindow.on("closed", () => {
-    colorWindow = null;
-  });
-}
-
 app.whenReady().then(() => {
   createWindow();
 });
 
-// Функция для установки opacity элементов
 function setOpacity(opacity) {
   win.webContents.insertCSS(`
         h1, h2, h3, h4, h5, h6 {
           opacity: ${opacity} !important;
         }
       `);
-}
-
-// Функция для установки color элементов
-function setColor(color) {
-  win.webContents.insertCSS(`
-    h1, h2, h3, h4, h5, h6 {
-      color: ${color} !important;
-    }
-  `);
 }

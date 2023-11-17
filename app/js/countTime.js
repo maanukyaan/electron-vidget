@@ -30,7 +30,7 @@ function getTime() {
   nextMidnight.setHours(0, 0, 0, 0);
 
   // Вычисляем разницу во времени
-  const secondaryTimeDifference = nextMidnight - currentTime;
+  const secondaryTimeDifference = nextMidnight - currentTime + 60000;
 
   // Вычисляем количество оставшихся часов и минут
   secondaryHours.innerHTML =

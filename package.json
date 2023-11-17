@@ -1,26 +1,39 @@
 {
-  "name": "desktop-vidget",
+  "name": "ultra-clock",
   "version": "1.0.0",
-  "description": "",
+  "description": "Desktop vidget",
   "main": "app.js",
   "scripts": {
-    "start": "electron ."
-  },
+    "start": "electron .",
+    "build": "electron-builder"
+  },  
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^26.1.0"
+    "electron": "^26.1.0",
+    "electron-builder": "^24.6.4",
+    "electron-packager": "^17.1.2"
   },
   "build": {
-    "appId": "com.kenshi.timeWidget",
-    "productName": "Time Widget",
-    "directories": {
-      "output": "build"
-    },
+    "productName": "Ultra Clock",
+    "appId": "UltraClock",
     "win": {
-      "target": "nsis",
-      "icon": "logo.ico"
+      "target": [
+        "nsis"
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico",
+      "uninstallDisplayName": "Uninstall Ultra Clock",
+      "license": "license.md",
+      "allowToChangeInstallationDirectory": true
     }
+  },
+  "dependencies": {
+    "auto-launch": "^5.0.6"
   }
 }
